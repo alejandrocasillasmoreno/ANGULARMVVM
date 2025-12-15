@@ -27,12 +27,12 @@ ngOnInit() {
 
   getProductos(): void {
     this.productosService.getData().subscribe({
-      next: (data) => {
+      next: (data: any) => {
         this.productos = data;  // Asignar los datos de productos
         this.data = data;  // Asignar la respuesta a la variable 'data'
         this.loading = false;   // Detener el indicador de carga
       },
-      error: (err) => {
+      error: (err: any) => {
         this.error = 'Error al cargar productos';  // Manejar errores
         console.error(err);
       }
@@ -41,12 +41,12 @@ ngOnInit() {
 
 getClientes(): void {
     this.clientesService.getData('clientes').subscribe({
-      next: (data) => {
+      next: (data: any) => {
         this.clientes = data;  // Asignar los datos de productos
         this.data = data;  // Asignar la respuesta a la variable 'data'
         this.loading = false;   // Detener el indicador de carga
       },
-      error: (err) => {
+      error: (err: any) => {
         this.error = 'Error al cargar productos';  // Manejar errores
         console.error(err);
       }

@@ -1,105 +1,88 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
+import { Cliente } from './models/cliente.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ClientesService {
+  private baseUrl = 'http://localhost:3000/api/clientes';
+  // raíz de la API para los endpoints que pasan el path como parámetro
+  private apiRoot = 'http://localhost:3000/api';
 
- 
-private apiUrl = 'http://localhost/phpulse/index.php';  // URL base de la API
+  constructor(private http: HttpClient) { }
 
-// Datos
-private clientesData = [
-  { id: 1, nombre: 'Alvaro García', email: 'alvagar@example.com', telefono: '123456789' },
-  { id: 2, nombre: 'Paula Gorgoño', email: 'paulagor@example.com', telefono: '987654321' },
-  { id: 3, nombre: 'Pedro Perez', email: 'pperez@example.com', telefono: '555123456' }
-];
-    
-    constructor(private http: HttpClient) {
-      this.loadFromStorage();
+  // ==========================
+  //   GET - Obtener lista
+  // ==========================
+  getClientes(): Observable<Cliente[]> {
+    return this.http.get<Cliente[]>(this.baseUrl);
+  }
+
+  // Compatibilidad con componentes que llaman a `getData('clientes')`
+  getData(path?: string): Observable<any> {
+    if (path) {
+      return this.http.get<any>(`${this.apiRoot}/${path}`);
     }
+    return this.getClientes();
+  }
 
-  private storageKey = 'clientesData';
+  // ==========================
+  //   GET BY ID
+  // ==========================
+  getClienteById(id: number): Observable<Cliente> {
+    return this.http.get<Cliente>(`${this.baseUrl}/${id}`);
+  }
 
-  private loadFromStorage(): void {
-    try {
-      const raw = localStorage.getItem(this.storageKey);
-      if (raw) {
-        this.clientesData = JSON.parse(raw);
+  // ==========================
+  //   POST - Nuevo cliente
+  // ==========================
+  createCliente(cliente: Cliente): Observable<Cliente> {
+    return this.http.post<Cliente>(this.baseUrl, cliente);
+  }
+
+  // Compatibilidad con componentes que llaman a `postData('crear_cliente', payload)`
+  postData(path: string, payload: any): Observable<any> {
+    // Compatibilidad con rutas legadas desde la UI
+    if (path === 'crear_cliente') {
+      // La API REST espera POST /api/clientes
+      return this.http.post<any>(`${this.apiRoot}/clientes`, payload);
+    }
+    return this.http.post<any>(`${this.apiRoot}/${path}`, payload);
+  }
+
+  // ==========================
+  //   PUT - Editar cliente
+  // ==========================
+  updateCliente(id: number, cliente: Cliente): Observable<Cliente> {
+    return this.http.put<Cliente>(`${this.baseUrl}/${id}`, cliente);
+  }
+
+  // Compatibilidad con componentes que llaman a `putData('editar_cliente', payload)`
+  putData(path: string, payload: any): Observable<any> {
+    // Compatibilidad con rutas legadas desde la UI
+    if (path === 'editar_cliente') {
+      // Se espera que payload incluya `id` — usamos PUT /api/clientes/:id
+      const id = payload && payload.id;
+      if (id !== undefined && id !== null) {
+        return this.http.put<any>(`${this.apiRoot}/clientes/${id}`, payload);
       }
-    } catch (e) {
-      console.error('Error leyendo clientes desde localStorage', e);
+      // Si no hay id, intentamos usar la ruta tal cual
+      return this.http.put<any>(`${this.apiRoot}/${path}`, payload);
     }
+    return this.http.put<any>(`${this.apiRoot}/${path}`, payload);
   }
 
-  private saveToStorage(): void {
-    try {
-      localStorage.setItem(this.storageKey, JSON.stringify(this.clientesData));
-    } catch (e) {
-      console.error('Error guardando clientes en localStorage', e);
-    }
+  // ==========================
+  //   DELETE - Borrar cliente
+  // ==========================
+  deleteCliente(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/${id}`);
   }
 
-      // Método genérico para obtener datos (GET)
-  getData(action: string): Observable<any> {
-        // Si pedimos clientes, leer desde localStorage antes de devolver
-        if (action === 'clientes') {
-          this.loadFromStorage();
-          return of(this.clientesData);
-        }
-    const url = `${this.apiUrl}?action=${action}`;  // URL dinámica basada en la acción
-    return this.http.get<any>(url);  // Hacer la solicitud GET
-  }
-
-  // Método genérico para enviar datos (POST)
-  postData(action: string, data: any): Observable<any> {
-    // Si trabajamos con los datos mock en memoria, manejar la creación localmente
-    if (action === 'crear_cliente') {
-      this.loadFromStorage();
-      const nextId = this.clientesData.length ? Math.max(...this.clientesData.map(c => c.id)) + 1 : 1;
-      const nuevo = { id: nextId, ...data };
-      this.clientesData.push(nuevo);
-      this.saveToStorage();
-      return of(this.clientesData);
-    }
-    const url = `${this.apiUrl}?action=${action}`;  // URL dinámica basada en la acción
-    return this.http.post<any>(url, data);  // Hacer la solicitud POST
-  }
-
-  // Método genérico para actualizar datos (PUT)
-  putData(action: string, data: any): Observable<any> {
-    // Si trabajamos con los datos mock en memoria, manejar la edición localmente
-    if (action === 'editar_cliente') {
-      this.loadFromStorage();
-      const id = data.id ?? data?.id;
-      const idx = this.clientesData.findIndex(c => c.id === id);
-      if (idx !== -1) {
-        this.clientesData[idx] = { ...this.clientesData[idx], ...data };
-        this.saveToStorage();
-      }
-      return of(this.clientesData);
-    }
-    const url = `${this.apiUrl}?action=${action}`;  // URL dinámica basada en la acción
-    return this.http.put<any>(url, data);  // Hacer la solicitud PUT
-  }
-
-  // Método genérico para eliminar datos (DELETE)
-  deleteData(action: string, id: number): Observable<any> {
-    const url = `${this.apiUrl}?action=${action}&id=${id}`;  // URL dinámica con el id
-    return this.http.delete<any>(url);  // Hacer la solicitud DELETE
-  }
-
+  // Compatibilidad con componentes que llaman a `BorrarDatos(id)`
   BorrarDatos(id: number): Observable<any> {
-    // Método específico para borrar un cliente (manejo local para datos mock)
-    this.loadFromStorage();
-    const idx = this.clientesData.findIndex(c => c.id === id);
-    if (idx !== -1) {
-      this.clientesData.splice(idx, 1);
-      this.saveToStorage();
-    }
-    return of(this.clientesData);
+    return this.deleteCliente(id);
   }
-    }
-
+}

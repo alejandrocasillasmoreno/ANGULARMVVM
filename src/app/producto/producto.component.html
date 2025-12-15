@@ -1,4 +1,76 @@
 <div>
+  <!-- Añadiendo el formulario aquí -->
+  <div style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9;">
+    <form [formGroup]="myForm" (ngSubmit)="saveProducto()">
+      <div *ngIf="editing" style="margin-bottom: 10px; font-weight: bold; color: #007bff;">
+        Editando producto ID: {{ editingId }}
+      </div>
+      
+      <input type="hidden" formControlName="id" />
+      
+      <div style="margin-bottom: 10px;">
+        <label for="nombre" style="display: block; margin-bottom: 5px; font-weight: bold;">Nombre:</label>
+        <input id="nombre" formControlName="nombre" type="text" 
+               style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"
+               [class.is-invalid]="myForm.get('nombre')?.invalid && myForm.get('nombre')?.touched"
+               required />
+        <div *ngIf="myForm.get('nombre')?.invalid && myForm.get('nombre')?.touched" 
+             style="color: #dc3545; font-size: 12px; margin-top: 5px;">
+          El nombre es requerido
+        </div>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <label for="descripcion" style="display: block; margin-bottom: 5px; font-weight: bold;">Descripción:</label>
+        <input id="descripcion" formControlName="descripcion" type="text" 
+               style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <label for="precio" style="display: block; margin-bottom: 5px; font-weight: bold;">Precio:</label>
+        <input id="precio" formControlName="precio" type="number" step="0.01" 
+               style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"
+               [class.is-invalid]="myForm.get('precio')?.invalid && myForm.get('precio')?.touched"
+               required />
+        <div *ngIf="myForm.get('precio')?.invalid && myForm.get('precio')?.touched" 
+             style="color: #dc3545; font-size: 12px; margin-top: 5px;">
+          <span *ngIf="myForm.get('precio')?.errors?.['required']">El precio es requerido</span>
+          <span *ngIf="myForm.get('precio')?.errors?.['min']">El precio debe ser mayor o igual a 0</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <label for="categoria" style="display: block; margin-bottom: 5px; font-weight: bold;">Categoría:</label>
+        <select id="categoria" formControlName="categoria" 
+                style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"
+                [class.is-invalid]="myForm.get('categoria')?.invalid && myForm.get('categoria')?.touched"
+                required>
+          <option value="" disabled selected>Seleccione una categoría</option>
+          <option value="Periféricos">Periféricos</option>
+          <option value="Componentes">Componentes</option>
+        </select>
+        <div *ngIf="myForm.get('categoria')?.invalid && myForm.get('categoria')?.touched" 
+             style="color: #dc3545; font-size: 12px; margin-top: 5px;">
+          La categoría es requerida
+        </div>
+      </div>
+
+      <div style="margin-top: 15px;">
+        <button type="submit" [disabled]="myForm.invalid || loading" 
+                style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+          <span *ngIf="loading">Guardando...</span>
+          <span *ngIf="!loading">{{ editing ? 'Actualizar Producto' : 'Crear Producto' }}</span>
+        </button>
+        
+        <button type="button" (click)="agregar()" 
+                style="background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+          Nuevo
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tu tabla existente (sin cambios) -->
   <div *ngIf="loading">
     <p>Cargando productos...</p>
   </div>
@@ -17,7 +89,6 @@
       </tr>
       </thead>
       <tbody>
-
         <tr *ngFor="let producto of productos; let i = index">
           <td scope="row">{{ producto.id }}</td>
           <td>{{ producto.nombre }}</td>
@@ -31,23 +102,5 @@
       </tr>
       </tbody>
     </table>
-    <hr>
-    <form [formGroup]="myForm" (ngSubmit)="saveProducto()">
-      <div *ngIf="editing">Editando producto ID: {{ editingId }}</div>
-      <input type="hidden" formControlName="id" />
-      <label for="nombre">Nombre:</label>
-      <input id="nombre" formControlName="nombre" type="text" required />
-
-      <label for="descripcion">Descripción:</label>
-      <input id="descripcion" formControlName="descripcion" type="text" />
-
-      <label for="precio">Precio:</label>
-      <input id="precio" formControlName="precio" type="number" step="0.01" required />
-
-      <button type="submit" [disabled]="myForm.invalid">{{ editing ? 'Actualizar Producto' : 'Crear Producto' }}</button>
-      <button type="button" (click)="agregar()">Nuevo</button>
-    </form>
   </div>
 </div>
-
-

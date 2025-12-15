@@ -1,135 +1,137 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ProductosService } from '../productos.service';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 @Component({
   selector: 'app-producto',
   templateUrl: './producto.component.html',
   styleUrls: ['./producto.component.scss']
 })
-export class ProductoComponent {
-  title = 'angularmvvm';
-
+export class ProductoComponent implements OnInit {
   productos: any[] = [];
-  error: string | null = null;
-  data: any;  // Variable para almacenar los datos
-  loading: boolean = true;  // Indicador de carga
+  loading = false;
+  error = '';
+  
+  // Añadir estas propiedades para el formulario
   myForm: FormGroup;
-  editing: boolean = false;
-  editingId: number | null = null;
+  editing = false;
+  editingId?: number;
 
-
-  constructor(private productosService: ProductosService, private fb: FormBuilder) {
+  constructor(
+    private productosService: ProductosService,
+    private fb: FormBuilder
+  ) {
+    // Inicializar formulario
     this.myForm = this.fb.group({
-      id: [null],
-      nombre: [''],
-      descripcion: [''],
-      precio: [0]
+      id: [''],
+      nombre: ['', Validators.required],
+      precio: ['', [Validators.required, Validators.min(0)]],
+      categoria: ['', Validators.required],
+      descripcion: ['']
     });
   }
 
-
-ngOnInit() {
-    this.getProductos(); 
-    // Cargar los datos cuando el componente se inicializa
+  ngOnInit(): void {
+    this.cargarProductos();
   }
 
-
-  getProductos(): void {
+  cargarProductos(): void {
+    this.loading = true;
     this.productosService.getData().subscribe({
       next: (data: any[]) => {
-        this.productos = data;  // Asignar los datos de productos
-        this.loading = false;   // Detener el indicador de carga
+        this.productos = data;
+        this.loading = false;
       },
-      error: (err: any) => {
-        this.error = 'Error al cargar productos';  // Manejar errores
-        console.error(err);
-      }
-    });
-}
-
-  borrar(valor: number): void {
-    console.log('El valor es: ', valor);
-
-    this.productosService.deleteData(valor).subscribe({
-      next: () => {
-        this.getProductos(); // Refrescar la lista de productos después de borrar
-      },
-      error: (err) => {
-        this.error = 'Error al borrar el producto'; // Manejar errores
-        console.error(err);
+      error: (error: any) => {
+        this.error = 'Error al cargar productos';
+        this.loading = false;
+        console.error(error);
       }
     });
   }
 
-  editar(valor: number): void {
-    console.log('Editar el producto con ID: ', valor);
-    this.productosService.getDataById(valor).subscribe({
-      next: (data: any) => {
-        // Poblar el formulario para edición
-        this.myForm.patchValue({
-          id: data.id ?? valor,
-          nombre: data.nombre ?? data.name,
-          descripcion: data.descripcion ?? data.description,
-          precio: data.precio ?? data.price
-        });
-        this.editing = true;
-        this.editingId = valor;
-      },
-      error: (err: any) => {
-        this.error = 'Error al obtener los datos del producto'; // Manejar errores
-        console.error(err);
-      }
-    });
-  }
+  // Método para guardar producto (crear o actualizar)
+  saveProducto(): void {
+    if (this.myForm.invalid) {
+      return;
+    }
 
-  agregar() {
-    this.myForm.reset({ id: null, nombre: '', descripcion: '', precio: 0 });
-    this.editing = false;
-    this.editingId = null;
-  }
+    const producto = this.myForm.value;
+    this.loading = true;
 
-  saveProducto() {
-    const payload = this.myForm.value;
     if (this.editing && this.editingId) {
-      this.productosService.putData(this.editingId, payload).subscribe({
+      // Actualizar producto existente
+      this.productosService.putData(this.editingId, producto).subscribe({
         next: () => {
-          this.getProductos();
-          this.myForm.reset({ id: null, nombre: '', descripcion: '', precio: 0 });
-          this.editing = false;
-          this.editingId = null;
+          this.cargarProductos();
+          this.resetForm();
+          this.loading = false;
         },
-        error: (err) => {
+        error: (error: any) => {
           this.error = 'Error al actualizar producto';
-          console.error(err);
+          this.loading = false;
         }
       });
     } else {
-      this.productosService.postData(payload).subscribe({
+      // Crear nuevo producto
+      this.productosService.postData(producto).subscribe({
         next: () => {
-          this.getProductos();
-          this.myForm.reset({ id: null, nombre: '', descripcion: '', precio: 0 });
+          this.cargarProductos();
+          this.resetForm();
+          this.loading = false;
         },
-        error: (err) => {
+        error: (error: any) => {
           this.error = 'Error al crear producto';
-          console.error(err);
+          this.loading = false;
         }
       });
     }
   }
 
+  // Método para editar producto
+  editar(id: number): void {
+    this.editing = true;
+    this.editingId = id;
+    
+    this.productosService.getDataById(id).subscribe({
+      next: (producto: any) => {
+        this.myForm.patchValue(producto);
+      },
+      error: (error: any) => {
+        this.error = 'Error al cargar producto para editar';
+      }
+    });
+  }
 
+  // Método para borrar producto
+  borrar(id: number): void {
+    if (confirm('¿Estás seguro de eliminar este producto?')) {
+      this.productosService.deleteData(id).subscribe({
+        next: () => {
+          this.cargarProductos();
+        },
+        error: (error: any) => {
+          this.error = 'Error al eliminar producto';
+        }
+      });
+    }
+  }
+
+  // Método para agregar nuevo producto
+  agregar(): void {
+    this.resetForm();
+  }
+
+  // Resetear formulario
+  resetForm(): void {
+    this.myForm.reset({
+      id: '',
+      nombre: '',
+      precio: '',
+      categoria: '',
+      descripcion: ''
+    });
+    this.editing = false;
+    this.editingId = undefined;
+  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -38,11 +38,11 @@ export class ClienteComponent implements OnInit {
   
   getClientes(): void {
       this.clientesService.getData('clientes').subscribe({
-        next: (data) => {
+        next: (data: any) => {
           this.clientes = data;  
           this.loading = false;   // Detener el indicador de carga
         },
-        error: (err) => {
+        error: (err: any) => {
           this.error = 'Error al cargar clientes';  // Manejar errores
           console.error(err);
         }
@@ -87,28 +87,32 @@ export class ClienteComponent implements OnInit {
 
     saveCliente() {
       const payload = this.myForm.value;
+      if (this.myForm.invalid) {
+        return;
+      }
+
       if (this.editing && this.editingId) {
-        // Actualizar cliente
-        this.clientesService.putData('editar_cliente', { id: this.editingId, ...payload }).subscribe({
+        // Actualizar cliente usando método REST explícito
+        this.clientesService.updateCliente(this.editingId, payload).subscribe({
           next: () => {
             this.getClientes();
             this.myForm.reset({ id: null, nombre: '', email: '', telefono: '' });
             this.editing = false;
             this.editingId = null;
           },
-          error: (err) => {
+          error: (err: any) => {
             this.error = 'Error al actualizar cliente';
             console.error(err);
           }
         });
       } else {
-        // Crear nuevo cliente
-        this.clientesService.postData('crear_cliente', payload).subscribe({
+        // Crear nuevo cliente usando método REST explícito
+        this.clientesService.createCliente(payload).subscribe({
           next: () => {
             this.getClientes();
             this.myForm.reset({ id: null, nombre: '', email: '', telefono: '' });
           },
-          error: (err) => {
+          error: (err: any) => {
             this.error = 'Error al crear cliente';
             console.error(err);
           }
